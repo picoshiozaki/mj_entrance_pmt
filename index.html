@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Entrance Gate Prompt Builder</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background: #f0f2f5;
+        line-height: 1.6;
+      }
+      .prompt-display {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        white-space: pre-wrap;
+        font-family: monospace;
+        font-size: 16px;
+        line-height: 1.8;
+        border: 2px solid #e1e4e8;
+      }
+      .category {
+        background: white;
+        padding: 25px;
+        margin-bottom: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .category-title {
+        font-weight: bold;
+        margin-bottom: 15px;
+        font-size: 18px;
+        color: #1a365d;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e1e4e8;
+      }
+      .category-title.required::after {
+        content: " *";
+        color: #e53e3e;
+      }
+      .options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 5px 0;
+      }
+      .option-btn {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 12px 20px;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+      .option-btn:hover {
+        background: #edf2f7;
+        border-color: #cbd5e0;
+        transform: translateY(-1px);
+      }
+      .option-btn.selected {
+        background: #3182ce;
+        color: white;
+        border-color: #2c5282;
+        box-shadow: 0 2px 4px rgba(49, 130, 206, 0.3);
+      }
+      .copy-btn {
+        background: #38a169;
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-bottom: 25px;
+        font-size: 16px;
+        transition: all 0.2s;
+      }
+      .copy-btn:hover {
+        background: #2f855a;
+        transform: translateY(-1px);
+      }
+      .error-message {
+        color: #e53e3e;
+        margin-bottom: 15px;
+        font-weight: 500;
+        padding: 10px;
+        background: #fff5f5;
+        border-radius: 8px;
+        border: 1px solid #feb2b2;
+        display: none;
+      }
+      .error-message.visible {
+        display: block;
+      }
+      .options-group {
+        margin-bottom: 15px;
+        padding: 10px;
+        border-radius: 8px;
+        background: #f8fafc;
+      }
+      .group-title {
+        font-size: 14px;
+        color: #666;
+        margin: 10px 0 5px;
+        padding-left: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="error-message" class="error-message"></div>
+    <div id="prompt-display" class="prompt-display"></div>
+    <button id="copy-btn" class="copy-btn">プロンプトをコピー</button>
+    <div id="categories"></div>
+
+    <script>
+      const categoryOrder = [
+        "カメラアングル",
+        "特性",
+        "エントランスゲート",
+        "目的",
+        "形状",
+        "サイズ",
+        "高さ",
+        "装飾要素",
+        "デザイン設定",
+        "Location",
+        "レンダリング",
+        "照明",
+        "除外",
+        "比率",
+        "バージョン",
+      ];
+
+      const categories = {
+        カメラアングル: [
+          "Eye-Level Shot",
+          "Full Shot",
+          "Low Angle Shot",
+          "Wide front Shot",
+          "Corner Perspective Shot",
+          "Dramatic wide shot",
+          "Bird's-Eye Shot",
+        ],
+        特性: {
+          スケール: ["huge", "massive", "grand", "monumental"],
+          空間: ["welcoming", "striking", "impressive", "dramatic"],
+          建築: ["architectural", "prominent", "commanding", "iconic"],
+        },
+        エントランスゲート: [
+          "event entrance gate",
+          "exhibition entrance arch",
+          "ceremonial gateway",
+          "welcome gate",
+          "event arch",
+          "entry gate",
+        ],
+        目的: [
+          'for temporary solo exhibition exhibiting cutting-edge technology of broadcasting with the concept of "Future Vision 2030-2040"',
+          'for an exhibition of latest video and broadcasting technology, B to C event targeting adults and children. Exhibition title "Future Vision 2030-2040"',
+        ],
+        形状: [
+          "arch-shaped gate",
+          "modern geometric gateway",
+          "contemporary curved portal",
+          "Exhibition entrance monument",
+          "Feature gateway structure",
+          "Grand identity installation",
+          "Pair of branded walls",
+          "Welcome structure",
+          "Information portal",
+        ],
+        サイズ: [
+          "8 metres wide",
+          "10 metres wide",
+          "12 metres wide",
+          "15 metres wide",
+        ],
+        装飾要素: [
+          "digital LED displays",
+          "illuminated signage",
+          "impressive large graphic",
+          "architectural lighting",
+          "branded elements",
+          "dynamic video screens",
+          "sculptural elements",
+          "decorative patterns",
+        ],
+        デザイン設定: [
+          "Basic minimalist design with horizontal and vertical lines, white surfaces with metallic accents",
+          "Minimalist design with clean lines and pure surfaces, accented by metallic elements",
+          "Futuristic design with flowing curves and integrated LED lighting",
+          "Contemporary design blending traditional and modern elements",
+          "Bold geometric design with striking angular forms",
+          "Modern Octanorm system-based design with integrated lighting",
+          "Professional Maxima system design with sleek aluminum profiles",
+        ],
+        Location: {
+          屋内: ["bright spacious atrium floor", "shiny entrance hall with glass walls"],
+          施設: ["in a huge office building", "in a technology complex"],
+        },
+        高さ: ["2.7 metre", "3.6 metre", "4 metre", "4.5 metre"],
+        レンダリング: [
+          "Photorealist rendering",
+          "<monochrome sketch>",
+          "<monochrome lined sketch>",
+        ],
+        照明: [
+          "Soft ambient lighting with dynamic LED accents",
+          "Dramatic spotlighting with color-changing effects",
+          "Architectural lighting highlighting structural elements",
+          "Interactive lighting responding to movement",
+        ],
+        除外: ["--no people", "--no text", "--no advertisements", "--no plants flowers"],
+        比率: ["--ar 16:9", "--ar 4:3", "--ar 1:1"],
+        バージョン: ["--v 6.0"],
+      };
+
+      const selectedTraits = {
+        スケール: null,
+        空間: null,
+        建築: null,
+      };
+
+      const selectedOptions = {
+        バージョン: ["--v 6.0"],
+        装飾要素: [],
+        屋内: null,
+        施設: null,
+      };
+      function createTraitCategory(container) {
+        const traitDiv = document.createElement("div");
+        traitDiv.className = "category";
+        const titleDiv = document.createElement("div");
+        titleDiv.className = "category-title";
+        titleDiv.textContent = "特性";
+
+        const selectedCountSpan = document.createElement("span");
+        selectedCountSpan.className = "selected-count";
+        selectedCountSpan.textContent = "(0/3選択中)";
+        titleDiv.appendChild(selectedCountSpan);
+        traitDiv.appendChild(titleDiv);
+
+        Object.entries(categories.特性).forEach(([groupName, traits]) => {
+          const groupDiv = document.createElement("div");
+          groupDiv.className = "options-group";
+
+          const groupTitle = document.createElement("div");
+          groupTitle.className = "group-title";
+          groupTitle.textContent = groupName;
+          groupDiv.appendChild(groupTitle);
+
+          const optionsDiv = document.createElement("div");
+          optionsDiv.className = "options";
+
+          traits.forEach((trait) => {
+            const button = createTraitButton(
+              trait,
+              groupName,
+              optionsDiv,
+              selectedCountSpan
+            );
+            optionsDiv.appendChild(button);
+          });
+
+          groupDiv.appendChild(optionsDiv);
+          traitDiv.appendChild(groupDiv);
+        });
+
+        container.appendChild(traitDiv);
+      }
+
+      function createArrayOptions(category, options, optionsDiv) {
+        options.forEach((option) => {
+          if (category === "バージョン") return;
+          const button = document.createElement("button");
+          button.className = "option-btn";
+          button.textContent = option;
+
+          if (selectedOptions[category] === option) {
+            button.classList.add("selected");
+          }
+
+          button.onclick = () => {
+            if (category === "装飾要素") {
+              handleDecorationOption(button, category, option);
+            } else {
+              handleNormalOption(button, category, option, optionsDiv);
+            }
+            updatePrompt();
+          };
+          optionsDiv.appendChild(button);
+        });
+      }
+      function createTraitButton(
+        trait,
+        groupName,
+        optionsDiv,
+        selectedCountSpan
+      ) {
+        const button = document.createElement("button");
+        button.className = "option-btn multi-select";
+        button.textContent = trait;
+
+        button.onclick = () => {
+          const currentSelection = selectedTraits[groupName];
+          const totalSelected =
+            Object.values(selectedTraits).filter(Boolean).length;
+
+          if (currentSelection === trait) {
+            selectedTraits[groupName] = null;
+            button.classList.remove("selected");
+          } else {
+            if (totalSelected >= 3 && !currentSelection) {
+              alert("最大3つまで選択できます");
+              return;
+            }
+            optionsDiv.querySelectorAll(".option-btn").forEach((btn) => {
+              btn.classList.remove("selected");
+            });
+            selectedTraits[groupName] = trait;
+            button.classList.add("selected");
+          }
+
+          const newTotal = Object.values(selectedTraits).filter(Boolean).length;
+          selectedCountSpan.textContent = `(${newTotal}/3選択中)`;
+          updatePrompt();
+        };
+
+        return button;
+      }
+
+      function handleDecorationOption(button, category, option) {
+        if (button.classList.contains("selected")) {
+          button.classList.remove("selected");
+          selectedOptions[category] = selectedOptions[category].filter(
+            (item) => item !== option
+          );
+        } else {
+          if (!selectedOptions[category]) {
+            selectedOptions[category] = [];
+          }
+          selectedOptions[category].push(option);
+          button.classList.add("selected");
+        }
+      }
+
+      function handleNormalOption(button, category, option, optionsDiv) {
+        if (selectedOptions[category] === option) {
+          if (category === "エントランスゲート") return;
+          delete selectedOptions[category];
+          button.classList.remove("selected");
+        } else {
+          optionsDiv.querySelectorAll(".option-btn").forEach((btn) => {
+            btn.classList.remove("selected");
+          });
+          selectedOptions[category] = option;
+          button.classList.add("selected");
+        }
+      }
+      function createCategories() {
+        const container = document.getElementById("categories");
+
+        categoryOrder.forEach((category) => {
+          if (category === "特性") {
+            createTraitCategory(container);
+            return;
+          }
+
+          const options = categories[category];
+          if (!options) return;
+
+          const categoryDiv = document.createElement("div");
+          categoryDiv.className = "category";
+
+          const titleDiv = document.createElement("div");
+          titleDiv.className =
+            "category-title" +
+            (category === "エントランスゲート" ? " required" : "");
+          titleDiv.textContent =
+            category === "装飾要素" ? category + " (複数選択可)" : category;
+
+          const optionsDiv = document.createElement("div");
+          optionsDiv.className = "options";
+
+          if (category === "Location") {
+            createLocationOptions(options, optionsDiv);
+          } else if (Array.isArray(options)) {
+            createArrayOptions(category, options, optionsDiv);
+          }
+
+          categoryDiv.appendChild(titleDiv);
+          categoryDiv.appendChild(optionsDiv);
+          container.appendChild(categoryDiv);
+        });
+      }
+
+      function createLocationOptions(options, optionsDiv) {
+        Object.entries(options).forEach(([venueName, venueOptions]) => {
+          const groupDiv = document.createElement("div");
+          groupDiv.className = "options-group";
+
+          const groupTitle = document.createElement("div");
+          groupTitle.className = "group-title";
+          groupTitle.textContent = venueName;
+          groupDiv.appendChild(groupTitle);
+
+          const venueOptionsDiv = document.createElement("div");
+          venueOptionsDiv.className = "options";
+
+          venueOptions.forEach((option) => {
+            const button = document.createElement("button");
+            button.className = "option-btn";
+            button.textContent = option;
+
+            if (selectedOptions[venueName] === option) {
+              button.classList.add("selected");
+            }
+
+            button.onclick = () => {
+              if (selectedOptions[venueName] === option) {
+                selectedOptions[venueName] = null;
+                button.classList.remove("selected");
+              } else {
+                venueOptionsDiv
+                  .querySelectorAll(".option-btn")
+                  .forEach((btn) => {
+                    btn.classList.remove("selected");
+                  });
+                selectedOptions[venueName] = option;
+                button.classList.add("selected");
+              }
+              updatePrompt();
+            };
+            venueOptionsDiv.appendChild(button);
+          });
+
+          groupDiv.appendChild(venueOptionsDiv);
+          optionsDiv.appendChild(groupDiv);
+        });
+      }
+
+      function updatePrompt() {
+        const selections = [];
+        let cameraAngleSelection = null;
+        const specialOptions = {
+          exclude: null,
+          ratio: null,
+        };
+
+        const cameraAngle = selectedOptions["カメラアングル"];
+        if (cameraAngle) {
+          cameraAngleSelection = cameraAngle;
+        }
+
+        const traitCategories = {
+          スケール: selectedTraits.スケール,
+          空間: selectedTraits.空間,
+          建築: selectedTraits.建築,
+        };
+
+        const selectedTraitsList =
+          Object.values(traitCategories).filter(Boolean);
+        const traitsDescription =
+          selectedTraitsList.length > 0 ? selectedTraitsList.join(" ") : "";
+
+          categoryOrder.forEach((category) => {
+    if (category === "バージョン" || category === "特性" || category === "カメラアングル") return;
+
+    if (category === "Location") {
+        // Location処理を追加
+        if (selectedOptions.屋内 || selectedOptions.施設) {
+            handleCategorySelection(category, null, selections, traitsDescription);
+        }
+    } else {
+        const selectedOption = selectedOptions[category];
+        if (!selectedOption) return;
+
+        if (category === "除外") {
+            specialOptions.exclude = selectedOption;
+            return;
+        }
+        if (category === "比率") {
+            specialOptions.ratio = selectedOption;
+            return;
+        }
+
+        handleCategorySelection(category, selectedOption, selections, traitsDescription);
+    }
+});
+
+        constructFinalPrompt(selections, cameraAngleSelection, specialOptions);
+      }
+
+      function handleCategorySelection(
+        category,
+        selectedOption,
+        selections,
+        traitsDescription
+      ) {
+        switch (category) {
+          case "エントランスゲート":
+            selections.push(
+              traitsDescription
+                ? `${traitsDescription} ${selectedOption}`
+                : selectedOption
+            );
+            break;
+          case "装飾要素":
+            if (selectedOption.length > 0) {
+              selections.push(`featuring ${selectedOption.join(", ")}`);
+            }
+            break;
+          case "形状":
+            selections.push(`designed as ${selectedOption}`);
+            break;
+          case "サイズ":
+            selections.push(`measuring ${selectedOption}`);
+            break;
+          case "デザイン設定":
+            selections.push(`. ${selectedOption}`);
+            break;
+          case "Location":
+            // Location自体はselectedOptionsに存在しないので、直接屋内と施設を確認
+            const parts = [];
+            if (selectedOptions.屋内)
+              parts.push(`Located at ${selectedOptions.屋内}`);
+            if (selectedOptions.施設) parts.push(`${selectedOptions.施設}`);
+            if (parts.length > 0) {
+              selections.push(`. ${parts.join(", ")}`);
+            }
+            break;
+          case "照明":
+            selections.push(`illuminated by ${selectedOption}`);
+            break;
+          default:
+            selections.push(selectedOption);
+        }
+      }
+
+      function constructFinalPrompt(
+        selections,
+        cameraAngleSelection,
+        specialOptions
+      ) {
+        let promptText = "";
+        if (cameraAngleSelection) {
+          promptText = `${cameraAngleSelection} of`;
+        }
+
+        selections.forEach((selection) => {
+          if (!selection) return;
+
+          if (promptText) {
+            if (selection.startsWith(".")) {
+              promptText += selection;
+            } else if (
+              selection.includes("event entrance gate") ||
+              selection.includes("exhibition entrance arch") ||
+              selection.includes("ceremonial gateway") ||
+              selection.includes("welcome gate")
+            ) {
+              promptText += " " + selection;
+            } else if (
+              selection.startsWith("with") ||
+              selection.startsWith("featuring") ||
+              selection.startsWith("measuring") ||
+              selection.startsWith("illuminated")
+            ) {
+              promptText += ", " + selection;
+            } else {
+              promptText += ", " + selection;
+            }
+          } else {
+            promptText = selection;
+          }
+        });
+
+        if (specialOptions.exclude) promptText += " " + specialOptions.exclude;
+        if (specialOptions.ratio) promptText += " " + specialOptions.ratio;
+        promptText += " --v 6.0";
+
+        document.getElementById("prompt-display").textContent = promptText;
+        validateSelections();
+      }
+
+      function validateSelections() {
+        const errorMessage = document.getElementById("error-message");
+        if (!selectedOptions["エントランスゲート"]) {
+          errorMessage.textContent = "エントランスゲートの選択は必須です";
+          errorMessage.classList.add("visible");
+          return false;
+        }
+        errorMessage.classList.remove("visible");
+        return true;
+      }
+
+      document.getElementById("copy-btn").onclick = () => {
+        if (!validateSelections()) {
+          alert("エントランスゲートを選択してください");
+          return;
+        }
+        const promptText =
+          document.getElementById("prompt-display").textContent;
+        navigator.clipboard
+          .writeText(promptText)
+          .then(() => alert("プロンプトをクリップボードにコピーしました！"));
+      };
+
+      createCategories();
+    </script>
+  </body>
+</html>
